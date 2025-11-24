@@ -1,8 +1,7 @@
 streamlit
-tensorflow
+tensorflow>=2.9
 opencv-python
 pillow
 matplotlib
-seaborn
-scikit-learn
+
 
