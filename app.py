@@ -6,7 +6,7 @@ import traceback
 
 st.title("Plant Disease Detection App 🌱")
 
-MODEL_FILE = "model.keras"
+MODEL_FILE = "plant_disease_effb0_best.keras"
 
 @st.cache_resource
 def load_model_only_keras():
