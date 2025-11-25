@@ -1,6 +1,5 @@
-# requirements.txt
-tensorflow==2.18.0
-numpy==2.1.2
+tensorflow==2.13.0
+numpy==1.24.3
 streamlit
 opencv-python-headless
 pillow
