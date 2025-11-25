@@ -1,92 +1,46 @@
-# app.py
 import streamlit as st
-import numpy as np
 import tensorflow as tf
-import cv2
-import json
-import matplotlib.pyplot as plt
-from matplotlib import cm
+import numpy as np
 from PIL import Image
+import traceback
 
-st.set_page_config(layout="centered", page_title="Plant Disease Classifier")
+st.title("Plant Disease Detection App 🌱")
 
-MODEL_PATH = "plant_disease_effb0_best.keras"   # use the 'best' model (in same folder)
-CLASS_JSON = "class_names.json"
+MODEL_FILE = "model.keras"
 
-@st.cache(allow_output_mutation=True, suppress_st_warning=True)
-def load_model(path=MODEL_PATH):
-    model = tf.keras.models.load_model(path)
-    return model
-
-@st.cache(allow_output_mutation=True)
-def load_class_names(path=CLASS_JSON):
+@st.cache_resource
+def load_model_only_keras():
     try:
-        with open(path, "r") as f:
-            names = json.load(f)
-    except Exception:
-        names = [f"class_{i}" for i in range(100)]
-    return names
+        # compile=False avoids version conflicts
+        model = tf.keras.models.load_model(MODEL_FILE, compile=False)
+        return model
+    except Exception as e:
+        st.error("Failed to load .keras model.")
+        st.text(traceback.format_exc())
+        raise e
 
-IMG_SIZE = (224,224)
+# Load .keras model
+try:
+    model = load_model_only_keras()
+    st.success("Model loaded successfully!")
+except:
+    st.stop()
 
-def preprocess_image_pil(pil_img):
-    img = np.array(pil_img.convert("RGB"))
-    img = cv2.resize(img, IMG_SIZE)
-    img = tf.keras.applications.efficientnet.preprocess_input(img.astype("float32"))
-    return img
+uploaded_file = st.file_uploader("Upload a leaf image", type=["jpg", "jpeg", "png"])
 
-def top_k_preds(probs, k=5):
-    idx = np.argsort(probs)[::-1][:k]
-    return [(idx[i], float(probs[idx[i]])) for i in range(len(idx))]
+if uploaded_file:
+    img = Image.open(uploaded_file).convert("RGB")
+    img_resized = img.resize((224, 224))
 
-def gradcam_overlay(model, img_np, class_idx):
-    img_input = np.expand_dims(preprocess_image_pil(Image.fromarray(img_np)), axis=0)
-    last_conv = None
-    for layer in reversed(model.layers):
-        if len(layer.output_shape) == 4:
-            last_conv = layer.name
-            break
-    if last_conv is None:
-        return img_np
-    grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv).output, model.output])
-    with tf.GradientTape() as tape:
-        conv_outputs, preds = grad_model(img_input)
-        loss = preds[:, class_idx]
-    grads = tape.gradient(loss, conv_outputs)[0].numpy()
-    conv_outputs = conv_outputs[0].numpy()
-    weights = np.mean(grads, axis=(0,1))
-    cam = np.zeros(conv_outputs.shape[:2], dtype=np.float32)
-    for i, w in enumerate(weights):
-        cam += w * conv_outputs[:, :, i]
-    cam = np.maximum(cam, 0)
-    if cam.max() == 0:
-        return img_np
-    cam = cam / cam.max()
-    cam = cv2.resize(cam, IMG_SIZE)
-    heatmap = cm.jet(cam)[:, :, :3] * 255.0
-    overlay = 0.5 * heatmap + 0.5 * cv2.resize(img_np, IMG_SIZE)
-    overlay = np.clip(overlay, 0, 255).astype("uint8")
-    return overlay
+    st.image(img, caption="Uploaded Image", use_column_width=True)
 
-st.title("Plant Disease Classifier (EfficientNetB0)")
-st.write("Upload a leaf image — the model will predict disease and show Grad-CAM.")
+    arr = np.array(img_resized) / 255.0
+    arr = np.expand_dims(arr, axis=0)
 
-model = load_model()
-class_names = load_class_names()
-num_classes = model.output_shape[-1]
-
-uploaded = st.file_uploader("Choose an image...", type=["jpg","jpeg","png"])
-if uploaded is not None:
-    img = Image.open(uploaded)
-    st.image(img, caption="Uploaded image", use_column_width=True)
-    img_np = np.array(img.convert("RGB"))
-    x = preprocess_image_pil(img)
-    preds = model.predict(np.expand_dims(x,0))[0]
-    top5 = top_k_preds(preds, k=5)
-    st.markdown("### Top predictions")
-    for i, (idx, prob) in enumerate(top5):
-        label = class_names[idx] if idx < len(class_names) else str(idx)
-        st.write(f"{i+1}. **{label}** — {prob:.4f}")
-    top_idx = int(top5[0][0])
-    overlay = gradcam_overlay(model, img_np, top_idx)
-    st.image(overlay, caption="Grad-CAM overlay", use_column_width=True)
+    try:
+        preds = model.predict(arr)
+        class_idx = int(np.argmax(preds))
+        st.success(f"Predicted class: {class_idx}")
+    except Exception as e:
+        st.error("Prediction failed.")
+        st.text(traceback.format_exc())
