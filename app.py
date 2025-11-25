@@ -10,8 +10,8 @@ from PIL import Image
 
 st.set_page_config(layout="centered", page_title="Plant Disease Classifier")
 
-MODEL_PATH = "plant_disease_effb0_final.keras"   # place your saved model here
-CLASS_JSON = "class_names.json"                  # save your class names as JSON
+MODEL_PATH = "plant_disease_effb0_best.keras"   # use the 'best' model (in same folder)
+CLASS_JSON = "class_names.json"
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_model(path=MODEL_PATH):
@@ -24,11 +24,10 @@ def load_class_names(path=CLASS_JSON):
         with open(path, "r") as f:
             names = json.load(f)
     except Exception:
-        # fallback to numeric labels if file missing
         names = [f"class_{i}" for i in range(100)]
     return names
 
-IMG_SIZE = (224,224)   # must match training
+IMG_SIZE = (224,224)
 
 def preprocess_image_pil(pil_img):
     img = np.array(pil_img.convert("RGB"))
@@ -41,16 +40,14 @@ def top_k_preds(probs, k=5):
     return [(idx[i], float(probs[idx[i]])) for i in range(len(idx))]
 
 def gradcam_overlay(model, img_np, class_idx):
-    # create small gradcam
     img_input = np.expand_dims(preprocess_image_pil(Image.fromarray(img_np)), axis=0)
-    # pick a conv layer near the top; try to find last conv layer
     last_conv = None
     for layer in reversed(model.layers):
         if len(layer.output_shape) == 4:
             last_conv = layer.name
             break
     if last_conv is None:
-        return img_np  # fallback
+        return img_np
     grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv).output, model.output])
     with tf.GradientTape() as tape:
         conv_outputs, preds = grad_model(img_input)
@@ -71,7 +68,6 @@ def gradcam_overlay(model, img_np, class_idx):
     overlay = np.clip(overlay, 0, 255).astype("uint8")
     return overlay
 
-# UI
 st.title("Plant Disease Classifier (EfficientNetB0)")
 st.write("Upload a leaf image — the model will predict disease and show Grad-CAM.")
 
@@ -91,7 +87,6 @@ if uploaded is not None:
     for i, (idx, prob) in enumerate(top5):
         label = class_names[idx] if idx < len(class_names) else str(idx)
         st.write(f"{i+1}. **{label}** — {prob:.4f}")
-    # Grad-CAM overlay
     top_idx = int(top5[0][0])
     overlay = gradcam_overlay(model, img_np, top_idx)
     st.image(overlay, caption="Grad-CAM overlay", use_column_width=True)
