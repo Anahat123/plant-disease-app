@@ -6,7 +6,7 @@ import traceback
 
 st.title("Plant Disease Detection App 🌱")
 
-MODEL_FILE = "model.keras"
+MODEL_FILE = "plant_disease_effb0_best.keras"
 
 # ✅ class names manually inserted (from your JSON)
 CLASS_NAMES = [
