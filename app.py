@@ -11,7 +11,7 @@ st.set_page_config(page_title="Plant Disease Detection", layout="centered")
 st.title("Plant Disease Detection App 🌱")
 
 MODEL_FILE = "model.keras"
-CLASS_JSON_PATH = "/mnt/data/class_names.json"  # <-- using your uploaded file path
+CLASS_JSON_PATH = "class_names.json"  # <-- using your uploaded file path
 
 @st.cache_data
 def load_class_names(path=CLASS_JSON_PATH):
