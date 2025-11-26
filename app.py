@@ -7,7 +7,7 @@ from tensorflow.keras.applications.efficientnet import preprocess_input   # 🟢
 
 st.title("🌿 Plant Disease Detection App (EfficientNetB0)")
 
-MODEL_FILE = "model.keras"
+MODEL_FILE = "plant_disease_effb0_best.keras"
 
 # ------------------- CLASS NAMES (aligned perfectly) -------------------
 CLASS_NAMES = [
