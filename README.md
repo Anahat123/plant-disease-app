@@ -1,5 +1,9 @@
 # Plant Disease Detection Web Application
 
+## Live Web App
+
+[Open Streamlit Plant Disease Detector](https://plant-disease-app-cbqdcjkgzfx2lj8drh855e.streamlit.app/)
+
 This repository contains a deep learning based plant leaf disease classification system using EfficientNetB0 and deployed with Streamlit. The user can upload a leaf image and the model predicts the disease from 38 plant disease categories with a confidence score.
 
 ---------------------------------------------------------------------
