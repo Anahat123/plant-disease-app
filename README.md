@@ -6,6 +6,16 @@
 
 This repository contains a deep learning based plant leaf disease classification system using EfficientNetB0 and deployed with Streamlit. The user can upload a leaf image and the model predicts the disease from 38 plant disease categories with a confidence score.
 
+Model Notes & Usage Recommendations
+-The model was trained on the PlantVillage dataset.
+-For best results, upload images similar to dataset format:
+ -clear leaves
+ -close-up shots
+ -minimal background
+ -good lighting
+ -Full-plant images or images with cluttered background may reduce accuracy.
+Top-3 confidence scores are shown to help understand predictions.
+
 ---------------------------------------------------------------------
 
 ## Features
@@ -60,13 +70,14 @@ Once executed, Streamlit will open the web interface automatically in a browser 
 
 ## How the Application Works
 
-1. Loads EfficientNetB0 `.keras` model using TensorFlow  
-2. User uploads a plant leaf image  
-3. Image is resized to 224x224 and converted into a normalized NumPy array  
-4. Model predicts the probability distribution over 38 classes  
-5. Application displays:
-   - Predicted disease name  
-   - Confidence score  
+1.Loads the trained EfficientNetB0 .keras model using TensorFlow
+2.User uploads a plant leaf image through the Streamlit interface
+3.Image is resized to 224×224 and converted to a NumPy array (0–255 pixel values) — same preprocessing used during validation
+4.Model predicts a probability distribution across 38 disease classes
+5.The application displays:
+  -Top predicted disease
+  -Confidence score
+(Also shows Top-3 probable classes)
 
 ---------------------------------------------------------------------
 
