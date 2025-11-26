@@ -4,11 +4,10 @@ import numpy as np
 from PIL import Image
 import traceback
 
-st.title("Plant Disease Detection App 🌱")
+st.title("🌿 Plant Disease Detection App (EfficientNetB0)")
 
-MODEL_FILE = "plant_disease_effb0_best.keras"
+MODEL_FILE = "plant_disease_effb0_best.keras"  # or "model.keras" if you renamed it
 
-# ✅ class names manually inserted (from your JSON)
 CLASS_NAMES = [
     "Apple___Apple_scab",
     "Apple___Black_rot",
@@ -53,39 +52,37 @@ CLASS_NAMES = [
 @st.cache_resource
 def load_model_only_keras():
     try:
-        model = tf.keras.models.load_model(MODEL_FILE, compile=False)
-        return model
-    except Exception as e:
-        st.error("Failed to load .keras model.")
+        return tf.keras.models.load_model(MODEL_FILE, compile=False)
+    except Exception:
+        st.error("❌ Failed to load .keras model")
         st.text(traceback.format_exc())
-        raise e
+        raise
 
-# Load the model
-try:
-    model = load_model_only_keras()
-    st.success("Model loaded successfully!")
-except:
-    st.stop()
+model = load_model_only_keras()
+st.success("✅ Model loaded (val acc ≈ 98.6% on Kaggle)")
 
-uploaded_file = st.file_uploader("Upload a leaf image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload a leaf image 🌿", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
     img_resized = img.resize((224, 224))
-
     st.image(img, caption="Uploaded Image", use_column_width=True)
 
-    arr = np.array(img_resized) / 255.0
-    arr = np.expand_dims(arr, axis=0)
+    # 🔴 No /255, no preprocess_input – match val_ds
+    x = np.array(img_resized).astype("float32")   # shape (224, 224, 3), values 0–255
+    x = np.expand_dims(x, axis=0)                 # shape (1, 224, 224, 3)
 
     try:
-        preds = model.predict(arr)
-        class_idx = int(np.argmax(preds))
-        class_name = CLASS_NAMES[class_idx]
-        confidence = float(np.max(preds))
+        preds = model.predict(x)[0]               # shape (38,)
+        top3_idx = np.argsort(preds)[-3:][::-1]
 
-        st.success(f"Predicted disease: **{class_name}**\nConfidence: **{confidence:.2%}**")
+        st.subheader("🔍 Top predictions")
+        for i in top3_idx:
+            st.write(f"- **{CLASS_NAMES[i]}** — {preds[i]:.2%}")
 
-    except Exception as e:
-        st.error("Prediction failed.")
+        best_idx = int(top3_idx[0])
+        st.success(f"✅ Final prediction: **{CLASS_NAMES[best_idx]}** ({preds[best_idx]:.2%})")
+
+    except Exception:
+        st.error("❌ Prediction failed")
         st.text(traceback.format_exc())
