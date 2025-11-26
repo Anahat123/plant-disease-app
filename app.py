@@ -3,12 +3,13 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import traceback
+from tensorflow.keras.applications.efficientnet import preprocess_input   # 🟢 IMPORTANT FIX
 
-st.title("Plant Disease Detection App 🌱")
+st.title("🌿 Plant Disease Detection App (EfficientNetB0)")
 
-MODEL_FILE = "plant_disease_effb0_best.keras"
+MODEL_FILE = "model.keras"
 
-# ✅ class names manually inserted (from your JSON)
+# ------------------- CLASS NAMES (aligned perfectly) -------------------
 CLASS_NAMES = [
     "Apple___Apple_scab",
     "Apple___Black_rot",
@@ -22,7 +23,7 @@ CLASS_NAMES = [
     "Corn_(maize)___Northern_Leaf_Blight",
     "Corn_(maize)___healthy",
     "Grape___Black_rot",
-    "Grape___Esca_(Black_Measles)",
+   "Grape___Esca_(Black_Measles)",
     "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
     "Grape___healthy",
     "Orange___Haunglongbing_(Citrus_greening)",
@@ -50,42 +51,42 @@ CLASS_NAMES = [
     "Tomato___healthy"
 ]
 
+# ------------------- Load Model -------------------
 @st.cache_resource
 def load_model_only_keras():
     try:
-        model = tf.keras.models.load_model(MODEL_FILE, compile=False)
-        return model
-    except Exception as e:
-        st.error("Failed to load .keras model.")
+        return tf.keras.models.load_model(MODEL_FILE, compile=False)
+    except Exception:
+        st.error("❌ Failed to load .keras model")
         st.text(traceback.format_exc())
-        raise e
+        raise
 
-# Load the model
-try:
-    model = load_model_only_keras()
-    st.success("Model loaded successfully!")
-except:
-    st.stop()
+model = load_model_only_keras()
+st.success("✅ Model Loaded Successfully!")
 
-uploaded_file = st.file_uploader("Upload a leaf image", type=["jpg", "jpeg", "png"])
+# ------------------- Image Upload + Prediction -------------------
+uploaded_file = st.file_uploader("Upload a leaf image 🌿", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
-    img_resized = img.resize((224, 224))
-
+    img_resized = img.resize((224, 224))   # matches training size
     st.image(img, caption="Uploaded Image", use_column_width=True)
 
-    arr = np.array(img_resized) / 255.0
+    # 🟢 EfficientNetB0 correct preprocessing
+    arr = np.array(img_resized).astype("float32")
     arr = np.expand_dims(arr, axis=0)
+    arr = preprocess_input(arr)   # <--- The fix that improves prediction!
 
     try:
         preds = model.predict(arr)
-        class_idx = int(np.argmax(preds))
-        class_name = CLASS_NAMES[class_idx]
+        idx = int(np.argmax(preds))
         confidence = float(np.max(preds))
+        class_name = CLASS_NAMES[idx]
 
-        st.success(f"Predicted disease: **{class_name}**\nConfidence: **{confidence:.2%}**")
+        st.subheader("🔍 Prediction Result")
+        st.success(f"🌱 Disease: **{class_name}**")
+        st.write(f"📊 Confidence: **{confidence:.2%}**")
 
-    except Exception as e:
-        st.error("Prediction failed.")
+    except Exception:
+        st.error("❌ Prediction Failed")
         st.text(traceback.format_exc())
