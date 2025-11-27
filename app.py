@@ -59,7 +59,7 @@ def load_model_only_keras():
         raise
 
 model = load_model_only_keras()
-st.success("✅ Model loaded (val acc ≈ 98.6% on Kaggle)")
+st.success("✅ Model loaded")
 
 uploaded_file = st.file_uploader("Upload a leaf image 🌿", type=["jpg", "jpeg", "png"])
 
